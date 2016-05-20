@@ -1,5 +1,9 @@
 // Credits:
 // Guy Bedford https://github.com/guybedford
+// -----------
+// [harsh.r]
+// Updated to get output file from vulvanizeHTML options 
+// and consider systemGlobal if available while generating output snippets.
 
 var Vulcan = System._nodeRequire('vulcanize');
 var Promise = global.Promise || System._nodeRequire('es6-promise').Promise;
@@ -30,12 +34,6 @@ function extend(a, b) {
   return a;
 }
 
-/* function errCallback(err) {
-  setTimeout(function () {
-    throw err;
-  });
-} */
-
 module.exports = function bundle(loads, opts) {
   var loader = this;
 
@@ -53,18 +51,6 @@ module.exports = function bundle(loads, opts) {
 
   var vulcan = new Vulcan(options);
 
-  /* var minimize = new Minimize({
-    empty: false, // KEEP empty attributes
-    cdata: true, // KEEP CDATA from scripts
-    comments: false, // KEEP comments
-    ssi: false, // KEEP Server Side Includes
-    conditionals: true, // KEEP conditional internet explorer comments
-    spare: false, // KEEP redundant attributes
-    quotes: false, // KEEP arbitrary quotes
-    loose: false // KEEP one whitespace
-  }); */
-
-  // var rootURL = loader.rootURL || fromFileURL(loader.baseURL);
   var outFile = opts.outFile.replace(/\.js$/, '.html');
 
   var output = loads.map(function (load) {
@@ -72,7 +58,7 @@ module.exports = function bundle(loads, opts) {
   }).join('\n');
 
   var stubDefines = loads.map(function (load) {
-    return "System\.register('" + load.name + "', [], false, function() {});";
+    return (opts.systemGlobal || 'System') + "\.register('" + load.name + "', [], false, function() {});";
   }).join('\n');
 
   return new Promise(function (resolve, reject) {
@@ -83,11 +69,9 @@ module.exports = function bundle(loads, opts) {
       if (error) {
         return reject(error);
       }
-      // minimize.parse(output, function(error, output) {
-        // if (error) { return reject(error); }
-      fs.writeFileSync(outFile, output);
+
+      fs.writeFileSync(options.outFile || outFile, output);
       resolve(stubDefines);
-      // });
     });
   });
 };
